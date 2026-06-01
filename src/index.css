@@ -1,0 +1,98 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Barlow+Condensed:wght@400;600;700;800;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================
+   VARIABLES CSS GLOBALES
+   ============================================================ */
+:root {
+  --bg-primary: #050a14;
+  --bg-card: rgba(255, 255, 255, 0.03);
+  --border-subtle: rgba(255, 255, 255, 0.07);
+  --text-muted: rgba(255, 255, 255, 0.4);
+}
+
+/* ============================================================
+   RESET Y BASE
+   ============================================================ */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  font-family: 'Barlow Condensed', system-ui, sans-serif;
+  background-color: var(--bg-primary);
+  color: white;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+/* Fuente mono para elementos de código/dato */
+.font-mono {
+  font-family: 'Space Mono', 'Courier New', monospace !important;
+}
+
+/* ============================================================
+   SCROLLBAR PERSONALIZADO
+   ============================================================ */
+::-webkit-scrollbar {
+  width: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(248, 208, 48, 0.3);
+  border-radius: 2px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(248, 208, 48, 0.5);
+}
+
+/* ============================================================
+   SELECCIÓN DE TEXTO
+   ============================================================ */
+::selection {
+  background-color: rgba(248, 208, 48, 0.25);
+  color: white;
+}
+
+/* ============================================================
+   ANIMACIONES CSS ADICIONALES
+   ============================================================ */
+@keyframes pulse-glow {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+@keyframes scan-line {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+
+/* Glassmorphism utility */
+.glass {
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Focus visible para accesibilidad */
+button:focus-visible {
+  outline: 2px solid rgba(248, 208, 48, 0.6);
+  outline-offset: 2px;
+}

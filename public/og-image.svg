@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">Pokelock</title>
+  <desc id="desc">Pokelock social preview image</desc>
+  <defs>
+    <radialGradient id="bg" cx="20%" cy="30%" r="85%">
+      <stop offset="0" stop-color="#172554"/>
+      <stop offset=".55" stop-color="#060d1a"/>
+      <stop offset="1" stop-color="#050a14"/>
+    </radialGradient>
+    <linearGradient id="brand" x1="100" x2="820" y1="120" y2="500">
+      <stop offset="0" stop-color="#f8d030"/>
+      <stop offset=".5" stop-color="#f08030"/>
+      <stop offset="1" stop-color="#ff4466"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <circle cx="960" cy="315" r="178" fill="none" stroke="#f8d030" stroke-width="34" opacity=".25"/>
+  <circle cx="960" cy="315" r="72" fill="#f8d030" opacity=".9"/>
+  <path d="M776 315h368" stroke="#f8d030" stroke-width="34" opacity=".6"/>
+  <text x="80" y="240" fill="url(#brand)" font-family="Arial, Helvetica, sans-serif" font-size="124" font-weight="900">Pokelock</text>
+  <text x="86" y="330" fill="#ffffff" opacity=".82" font-family="Arial, Helvetica, sans-serif" font-size="42" font-weight="700">Calculadora Nuzlocke Pokemon</text>
+  <text x="88" y="400" fill="#ffffff" opacity=".52" font-family="Arial, Helvetica, sans-serif" font-size="30">Tipos · Gimnasios · EVs por generacion</text>
+  <rect x="86" y="470" width="430" height="6" rx="3" fill="url(#brand)"/>
+</svg>
