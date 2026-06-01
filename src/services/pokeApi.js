@@ -1,6 +1,9 @@
 const API_BASE = "https://pokeapi.co/api/v2";
+const CACHE_VERSION = "v2";
 const MEMORY_CACHE = new Map();
 const GENERATION_CACHE = new Map();
+const THROUGH_GENERATION_CACHE = new Map();
+let prewarmPromise = null;
 
 const fetchJson = async (url) => {
   const cached = MEMORY_CACHE.get(url);
@@ -30,6 +33,23 @@ const setSessionCache = (key, value) => {
     sessionStorage.setItem(key, JSON.stringify(value));
   } catch {
     // Cache is optional; if storage is full/private, the app still works.
+  }
+};
+
+const getPersistentCache = (key) => {
+  try {
+    const raw = localStorage.getItem(`${CACHE_VERSION}:${key}`);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+};
+
+const setPersistentCache = (key, value) => {
+  try {
+    localStorage.setItem(`${CACHE_VERSION}:${key}`, JSON.stringify(value));
+  } catch {
+    // Local storage is best-effort. Memory/session caches still keep the app usable.
   }
 };
 
@@ -103,9 +123,16 @@ export async function fetchPokemonForGeneration(generationId, onProgress) {
   if (GENERATION_CACHE.has(generationId)) return GENERATION_CACHE.get(generationId);
 
   const sessionKey = `ev-generation-${generationId}`;
+  const persistentData = getPersistentCache(sessionKey);
+  if (persistentData) {
+    GENERATION_CACHE.set(generationId, persistentData);
+    return persistentData;
+  }
+
   const sessionData = getSessionCache(sessionKey);
   if (sessionData) {
     GENERATION_CACHE.set(generationId, sessionData);
+    setPersistentCache(sessionKey, sessionData);
     return sessionData;
   }
 
@@ -123,10 +150,29 @@ export async function fetchPokemonForGeneration(generationId, onProgress) {
 
   GENERATION_CACHE.set(generationId, sortedPokemon);
   setSessionCache(sessionKey, sortedPokemon);
+  setPersistentCache(sessionKey, sortedPokemon);
   return sortedPokemon;
 }
 
 export async function fetchPokemonThroughGeneration(generationId, onProgress) {
+  const throughKey = `ev-through-${generationId}`;
+  if (THROUGH_GENERATION_CACHE.has(generationId)) return THROUGH_GENERATION_CACHE.get(generationId);
+
+  for (let cachedGeneration = 9; cachedGeneration > generationId; cachedGeneration -= 1) {
+    const cached = THROUGH_GENERATION_CACHE.get(cachedGeneration) || getPersistentCache(`ev-through-${cachedGeneration}`);
+    if (cached) {
+      const filtered = cached.filter((pokemon) => pokemon.generation <= generationId);
+      THROUGH_GENERATION_CACHE.set(generationId, filtered);
+      return filtered;
+    }
+  }
+
+  const persistentData = getPersistentCache(throughKey);
+  if (persistentData) {
+    THROUGH_GENERATION_CACHE.set(generationId, persistentData);
+    return persistentData;
+  }
+
   const generations = Array.from({ length: generationId }, (_, index) => index + 1);
   const buckets = [];
   let completed = 0;
@@ -151,7 +197,28 @@ export async function fetchPokemonThroughGeneration(generationId, onProgress) {
   const byId = new Map();
   buckets.flat().forEach((pokemon) => byId.set(pokemon.id || getPokemonIdFromUrl(pokemon.url), pokemon));
 
-  return [...byId.values()].sort((a, b) => a.id - b.id);
+  const pokemon = [...byId.values()].sort((a, b) => a.id - b.id);
+  THROUGH_GENERATION_CACHE.set(generationId, pokemon);
+  setPersistentCache(throughKey, pokemon);
+  return pokemon;
+}
+
+export function prewarmPokemonEvCache(targetGeneration = 9) {
+  if (prewarmPromise) return prewarmPromise;
+
+  const cached = THROUGH_GENERATION_CACHE.get(targetGeneration) || getPersistentCache(`ev-through-${targetGeneration}`);
+  if (cached) {
+    THROUGH_GENERATION_CACHE.set(targetGeneration, cached);
+    prewarmPromise = Promise.resolve(cached);
+    return prewarmPromise;
+  }
+
+  prewarmPromise = fetchPokemonThroughGeneration(targetGeneration).catch((error) => {
+    prewarmPromise = null;
+    throw error;
+  });
+
+  return prewarmPromise;
 }
 
 export function filterPokemonByEvStat(pokemonList, statName) {

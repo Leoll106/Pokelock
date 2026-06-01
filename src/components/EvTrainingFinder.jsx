@@ -214,7 +214,7 @@ function PokemonEvCard({ pokemon, stat, showAllEvs = false }) {
 }
 
 export default function EvTrainingFinder() {
-  const [selectedGame, setSelectedGame] = useState(GAME_OPTIONS[4]);
+  const [selectedGame, setSelectedGame] = useState(GAME_OPTIONS[8]);
   const [selectedStat, setSelectedStat] = useState(STAT_OPTIONS[1]);
   const [pokemonList, setPokemonList] = useState([]);
   const [loading, setLoading] = useState(true);
