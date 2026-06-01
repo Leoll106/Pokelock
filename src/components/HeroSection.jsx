@@ -52,7 +52,7 @@ export default function HeroSection() {
         <h1 className="hero-title-line text-6xl sm:text-8xl lg:text-[9rem] font-black tracking-tighter leading-none">
           <span className="text-transparent bg-clip-text"
             style={{ backgroundImage: 'linear-gradient(125deg, #F8D030 0%, #F08030 45%, #FF4466 100%)' }}>
-            POKELOCK
+            POKELOCKE
           </span>
         </h1>
       </div>

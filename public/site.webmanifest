@@ -1,6 +1,6 @@
 {
-  "name": "Pokelock",
-  "short_name": "Pokelock",
+  "name": "Pokelocke",
+  "short_name": "Pokelocke",
   "description": "Calculadora Nuzlocke con tipos Pokemon, gimnasios por juego y buscador de EVs.",
   "start_url": "/",
   "scope": "/",
@@ -9,7 +9,7 @@
   "theme_color": "#050a14",
   "icons": [
     {
-      "src": "/pokelock.svg",
+      "src": "/pokelocke.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any maskable"

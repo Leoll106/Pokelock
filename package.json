@@ -3,7 +3,7 @@
   "private": true,
   "version": "2.0.0",
   "type": "module",
-  "description": "Pokelock - herramientas Nuzlocke para tipos Pokemon, gimnasios y EVs",
+  "description": "Pokelocke - herramientas Nuzlocke para tipos Pokemon, gimnasios y EVs",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

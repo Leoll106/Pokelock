@@ -112,7 +112,7 @@ export default function App() {
       </div>
 
       <footer className="relative z-10 border-t border-white/5 mt-8 py-6 text-center text-white/15 text-xs tracking-widest font-mono">
-        POKELOCK · NUZLOCKE TOOLS · POKEMON © NINTENDO / GAME FREAK
+        POKELOCKE · NUZLOCKE TOOLS · POKEMON © NINTENDO / GAME FREAK
       </footer>
     </div>
   );

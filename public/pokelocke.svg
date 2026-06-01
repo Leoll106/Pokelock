@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
-  <title id="title">Pokelock</title>
-  <desc id="desc">Pokeball lock icon for Pokelock</desc>
+  <title id="title">Pokelocke</title>
+  <desc id="desc">Pokeball lock icon for Pokelocke</desc>
   <defs>
     <linearGradient id="shell" x1="70" x2="442" y1="64" y2="448" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#f8d030"/>
