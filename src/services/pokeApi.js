@@ -1,5 +1,5 @@
 const API_BASE = "https://pokeapi.co/api/v2";
-const CACHE_VERSION = "v2";
+const CACHE_VERSION = "v3";
 const MEMORY_CACHE = new Map();
 const GENERATION_CACHE = new Map();
 const THROUGH_GENERATION_CACHE = new Map();
@@ -105,7 +105,49 @@ const normalizePokemon = (pokemon, generation) => ({
     acc[entry.stat.name] = entry.effort || 0;
     return acc;
   }, {}),
+  baseStats: pokemon.stats.reduce((acc, entry) => {
+    acc[entry.stat.name] = entry.base_stat || 0;
+    return acc;
+  }, {}),
 });
+
+const getEvolutionRequirement = (details = {}) => {
+  const parts = [];
+
+  if (details.min_level) parts.push(`Nivel ${details.min_level}`);
+  if (details.item?.name) parts.push(`Usar ${details.item.name.replace(/-/g, " ")}`);
+  if (details.held_item?.name) parts.push(`Equipar ${details.held_item.name.replace(/-/g, " ")}`);
+  if (details.known_move?.name) parts.push(`Con ${details.known_move.name.replace(/-/g, " ")}`);
+  if (details.known_move_type?.name) parts.push(`Movimiento tipo ${details.known_move_type.name}`);
+  if (details.location?.name) parts.push(`En ${details.location.name.replace(/-/g, " ")}`);
+  if (details.min_happiness) parts.push(`Felicidad ${details.min_happiness}+`);
+  if (details.min_affection) parts.push(`Afecto ${details.min_affection}+`);
+  if (details.min_beauty) parts.push(`Belleza ${details.min_beauty}+`);
+  if (details.time_of_day) parts.push(details.time_of_day === "day" ? "De dia" : "De noche");
+  if (details.needs_overworld_rain) parts.push("Con lluvia");
+  if (details.party_species?.name) parts.push(`Con ${details.party_species.name.replace(/-/g, " ")} en equipo`);
+  if (details.party_type?.name) parts.push(`Con tipo ${details.party_type.name} en equipo`);
+  if (details.trade_species?.name) parts.push(`Intercambio por ${details.trade_species.name.replace(/-/g, " ")}`);
+  if (details.trigger?.name === "trade") parts.push("Intercambio");
+
+  return parts.length ? parts.join(" + ") : "Metodo especial";
+};
+
+const flattenEvolutionChain = (node, requirement = "Base") => {
+  const current = {
+    name: node.species.name,
+    url: node.species.url,
+    id: Number(node.species.url.match(/\/pokemon-species\/(\d+)\//)?.[1] || 0),
+    requirement,
+  };
+
+  return [
+    current,
+    ...node.evolves_to.flatMap((child) =>
+      flattenEvolutionChain(child, getEvolutionRequirement(child.evolution_details?.[0]))
+    ),
+  ];
+};
 
 export async function fetchGenerationSpecies(generationId) {
   const generation = await fetchJson(`${API_BASE}/generation/${generationId}/`);
@@ -201,6 +243,23 @@ export async function fetchPokemonThroughGeneration(generationId, onProgress) {
   THROUGH_GENERATION_CACHE.set(generationId, pokemon);
   setPersistentCache(throughKey, pokemon);
   return pokemon;
+}
+
+export async function fetchPokemonEvolutionLine(pokemonName) {
+  const pokemon = await fetchDefaultPokemonFromSpecies(pokemonName);
+  const species = await fetchJson(`${API_BASE}/pokemon-species/${pokemon.species.name}/`);
+  const chain = await fetchJson(species.evolution_chain.url);
+
+  const evolutionLine = await runConcurrent(
+    flattenEvolutionChain(chain.chain),
+    8,
+    async (entry) => ({
+      ...entry,
+      pokemon: normalizePokemon(await fetchDefaultPokemonFromSpecies(entry.name), null),
+    })
+  );
+
+  return evolutionLine;
 }
 
 export function prewarmPokemonEvCache(targetGeneration = 9) {

@@ -8,15 +8,15 @@ import {
 import TypeBadge from "./TypeBadge";
 
 // -------------------------------------------------------
-// Configuración de secciones
+// Configuracion de secciones
 // -------------------------------------------------------
 const OFFENSIVE_SECTIONS = [
   {
     key: "superEffective",
-    label: "Súper eficaz contra",
-    sublabel: "Daño ×2",
-    icon: "⚔️",
-    multiplier: "×2",
+    label: "Super eficaz contra",
+    sublabel: "Dano x2",
+    icon: "ATK",
+    multiplier: "x2",
     accentColor: "#4ade80",
     bg: "rgba(74,222,128,0.08)",
     border: "rgba(74,222,128,0.2)",
@@ -24,9 +24,9 @@ const OFFENSIVE_SECTIONS = [
   {
     key: "notVeryEffective",
     label: "Poco eficaz contra",
-    sublabel: "Daño ×0.5",
-    icon: "🛡️",
-    multiplier: "×½",
+    sublabel: "Dano x0.5",
+    icon: "DEF",
+    multiplier: "x0.5",
     accentColor: "#fb923c",
     bg: "rgba(251,146,60,0.08)",
     border: "rgba(251,146,60,0.2)",
@@ -34,9 +34,9 @@ const OFFENSIVE_SECTIONS = [
   {
     key: "immune",
     label: "No afecta",
-    sublabel: "Daño ×0",
-    icon: "🚫",
-    multiplier: "×0",
+    sublabel: "Dano x0",
+    icon: "IMM",
+    multiplier: "x0",
     accentColor: "#f87171",
     bg: "rgba(248,113,113,0.07)",
     border: "rgba(248,113,113,0.2)",
@@ -46,10 +46,10 @@ const OFFENSIVE_SECTIONS = [
 const DEFENSIVE_SECTIONS = [
   {
     key: "weakX4",
-    label: "Muy débil contra",
-    sublabel: "Recibe ×4",
-    icon: "💀",
-    multiplier: "×4",
+    label: "Muy debil contra",
+    sublabel: "Recibe x4",
+    icon: "x4",
+    multiplier: "x4",
     accentColor: "#ff3355",
     bg: "rgba(255,51,85,0.1)",
     border: "rgba(255,51,85,0.3)",
@@ -57,10 +57,10 @@ const DEFENSIVE_SECTIONS = [
   },
   {
     key: "weakX2",
-    label: "Débil contra",
-    sublabel: "Recibe ×2",
-    icon: "💥",
-    multiplier: "×2",
+    label: "Debil contra",
+    sublabel: "Recibe x2",
+    icon: "x2",
+    multiplier: "x2",
     accentColor: "#ef4444",
     bg: "rgba(239,68,68,0.08)",
     border: "rgba(239,68,68,0.2)",
@@ -68,9 +68,9 @@ const DEFENSIVE_SECTIONS = [
   {
     key: "resistX025",
     label: "Muy resistente a",
-    sublabel: "Recibe ×¼",
-    icon: "🔰",
-    multiplier: "×¼",
+    sublabel: "Recibe x0.25",
+    icon: "x.25",
+    multiplier: "x0.25",
     accentColor: "#22d3ee",
     bg: "rgba(34,211,238,0.08)",
     border: "rgba(34,211,238,0.25)",
@@ -79,9 +79,9 @@ const DEFENSIVE_SECTIONS = [
   {
     key: "resistX05",
     label: "Resiste a",
-    sublabel: "Recibe ×½",
-    icon: "🛡",
-    multiplier: "×½",
+    sublabel: "Recibe x0.5",
+    icon: "x.5",
+    multiplier: "x0.5",
     accentColor: "#60a5fa",
     bg: "rgba(96,165,250,0.07)",
     border: "rgba(96,165,250,0.18)",
@@ -89,9 +89,9 @@ const DEFENSIVE_SECTIONS = [
   {
     key: "immunities",
     label: "Inmune a",
-    sublabel: "Recibe ×0",
-    icon: "⛔",
-    multiplier: "×0",
+    sublabel: "Recibe x0",
+    icon: "IMM",
+    multiplier: "x0",
     accentColor: "#a78bfa",
     bg: "rgba(167,139,250,0.07)",
     border: "rgba(167,139,250,0.2)",
@@ -142,7 +142,7 @@ function MatchupCard({ config, items, isDual }) {
       </div>
 
       {isEmpty ? (
-        <p className="text-white/15 text-xs font-mono py-1">— Ninguno</p>
+        <p className="text-white/15 text-xs font-mono py-1">Ninguno</p>
       ) : (
         <div className="flex flex-wrap gap-1.5">
           {items.map((item) => {
@@ -156,7 +156,7 @@ function MatchupCard({ config, items, isDual }) {
                     className="absolute -top-1.5 -right-1.5 text-[8px] font-black px-0.5 rounded"
                     style={{ backgroundColor: config.accentColor, color: '#000' }}
                   >
-                    ×{mult}
+                    x{mult}
                   </span>
                 )}
               </div>
@@ -224,7 +224,7 @@ export default function TypeDetail({ type1, type2 }) {
 
   if (!c1) return null;
 
-  // Gradiente del header según mono/dual tipo
+  // Gradiente del header segun mono/dual tipo
   const headerGradient = isDual
     ? `linear-gradient(135deg, ${c1.bg}30 0%, ${c1.bg}10 40%, ${c2.bg}20 70%, ${c2.bg}08 100%)`
     : `linear-gradient(135deg, ${c1.bg}25, ${c1.bg}08, transparent)`;
@@ -246,7 +246,7 @@ export default function TypeDetail({ type1, type2 }) {
           boxShadow: headerGlow,
         }}
       >
-        {/* Decoración de fondo */}
+        {/* Decoracion de fondo */}
         <div className="absolute right-4 top-1/2 -translate-y-1/2 flex gap-2 pointer-events-none select-none" aria-hidden>
           <span className="text-[80px] sm:text-[110px] opacity-[0.04] font-black leading-none"
             style={{ color: c1.bg }}>{type1[0]}</span>
@@ -278,7 +278,7 @@ export default function TypeDetail({ type1, type2 }) {
       </div>
 
       {/* OFENSIVA */}
-      <SectionHeader label="Efectividad ofensiva" icon="⚔" note={isDual ? "Usando ambos tipos" : ""} />
+      <SectionHeader label="Efectividad ofensiva" icon="ATK" note={isDual ? "Usando ambos tipos" : ""} />
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-4 mb-8">
         {OFFENSIVE_SECTIONS.map(cfg => (
           <MatchupCard
@@ -297,7 +297,7 @@ export default function TypeDetail({ type1, type2 }) {
       {/* DEFENSIVA */}
       <SectionHeader
         label="Efectividad defensiva"
-        icon="🛡"
+        icon="DEF"
         note={isDual ? "Multiplicadores combinados" : ""}
       />
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-4">
@@ -324,10 +324,10 @@ export default function TypeDetail({ type1, type2 }) {
         <span><span className="text-white/40">RESISTENCIAS</span> {defensive.resistX025.length + defensive.resistX05.length}</span>
         <span><span className="text-white/40">INMUNIDADES</span> {defensive.immunities.length}</span>
         {isDual && defensive.weakX4.length > 0 && (
-          <span className="text-red-400/60">⚠ {defensive.weakX4.length} debilidad×4</span>
+          <span className="text-red-400/60">{defensive.weakX4.length} debilidad x4</span>
         )}
         {isDual && defensive.resistX025.length > 0 && (
-          <span className="text-cyan-400/60">★ {defensive.resistX025.length} resistencia×0.25</span>
+          <span className="text-cyan-400/60">{defensive.resistX025.length} resistencia x0.25</span>
         )}
       </div>
     </div>
@@ -366,7 +366,7 @@ function SectionHeader({ label, icon, note }) {
       <span className="text-white/40 text-xs font-mono tracking-[0.22em] uppercase whitespace-nowrap">
         {icon} {label}
       </span>
-      {note && <span className="text-white/20 text-xs font-mono">· {note}</span>}
+      {note && <span className="text-white/20 text-xs font-mono">/ {note}</span>}
       <div className="section-bar flex-1 h-px bg-gradient-to-r from-white/10 to-transparent" />
     </div>
   );

@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useState } from "react";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -9,36 +9,19 @@ import HeroSection from "./components/HeroSection";
 import ParticleField from "./components/ParticleField";
 import GymLeaders from "./components/GymLeaders";
 import EvTrainingFinder from "./components/EvTrainingFinder";
-import { prewarmPokemonEvCache } from "./services/pokeApi";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
 
 // Tabs de navegación principal
 const TABS = [
-  { id: "types",    label: "Tipos",     icon: "⚡" },
-  { id: "gyms",     label: "Gimnasios", icon: "🏟" },
-  { id: "evs",      label: "EVs",       icon: "EV" },
+  { id: "types",    label: "Tipos",     icon: "TY" },
+  { id: "gyms",     label: "Gimnasios", icon: "GY" },
+  { id: "evs",      label: "Pokemon",   icon: "PK" },
 ];
 
 export default function App() {
   const [selectedTypes, setSelectedTypes] = useState([]);
   const [activeTab, setActiveTab] = useState("types");
-
-  useEffect(() => {
-    const startPrewarm = () => {
-      prewarmPokemonEvCache(9).catch(() => {
-        // If PokeAPI is unavailable, the EV tab will retry when opened.
-      });
-    };
-
-    if ("requestIdleCallback" in window) {
-      const idleId = window.requestIdleCallback(startPrewarm, { timeout: 3500 });
-      return () => window.cancelIdleCallback?.(idleId);
-    }
-
-    const timerId = window.setTimeout(startPrewarm, 1500);
-    return () => window.clearTimeout(timerId);
-  }, []);
 
   const handleTypeSelect = (type) => {
     setSelectedTypes(prev => {

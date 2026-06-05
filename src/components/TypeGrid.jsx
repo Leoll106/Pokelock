@@ -6,7 +6,7 @@ import { ALL_TYPES, TYPE_COLORS, TYPE_POKEMON } from "../data/typeData";
 export default function TypeGrid({ selectedTypes, onTypeSelect, onClear }) {
   const gridRef = useRef(null);
 
-  // Animación de entrada staggered
+  // Animacion de entrada staggered
   useGSAP(() => {
     const ctx = gsap.context(() => {
       gsap.fromTo(".type-btn",
@@ -57,11 +57,11 @@ export default function TypeGrid({ selectedTypes, onTypeSelect, onClear }) {
 
   return (
     <div ref={gridRef}>
-      {/* Header con selección activa */}
+      {/* Header con seleccion activa */}
       <div className="flex items-start justify-between gap-4 mb-5 flex-wrap">
         <div>
           <h3 className="text-white/70 text-xs font-mono tracking-[0.25em] uppercase mb-1.5">
-            — Elige tipo (máx. 2)
+            Elige tipo (max. 2)
           </h3>
           <div className="flex items-center gap-2 flex-wrap">
             {selectedTypes.length === 0 ? (
@@ -88,12 +88,12 @@ export default function TypeGrid({ selectedTypes, onTypeSelect, onClear }) {
             onClick={onClear}
             className="text-white/30 hover:text-white/60 text-xs font-mono tracking-wider border border-white/10 hover:border-white/20 px-3 py-1.5 rounded-lg transition-all duration-200"
           >
-            ✕ LIMPIAR
+            X LIMPIAR
           </button>
         )}
       </div>
 
-      {/* Grid de tipos — visible y con color real */}
+      {/* Grid de tipos visible y con color real */}
       <div className="grid grid-cols-3 sm:grid-cols-6 lg:grid-cols-9 gap-2 sm:gap-2.5">
         {ALL_TYPES.map((type) => {
           const colors = TYPE_COLORS[type];
@@ -124,7 +124,7 @@ export default function TypeGrid({ selectedTypes, onTypeSelect, onClear }) {
               aria-label={`Tipo ${type}`}
               disabled={isDisabled}
             >
-              {/* Número de slot si está seleccionado */}
+              {/* Numero de slot si esta seleccionado */}
               {isSelected && (
                 <div
                   className="absolute -top-2 -right-2 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black z-10"
@@ -161,7 +161,7 @@ export default function TypeGrid({ selectedTypes, onTypeSelect, onClear }) {
       {/* Hint cuando hay 2 seleccionados */}
       {selectedTypes.length === 2 && (
         <p className="mt-3 text-white/20 text-xs font-mono text-center">
-          ↑ Tipos bloqueados — haz clic en uno seleccionado para cambiarlo, o en LIMPIAR para reiniciar
+          Tipos bloqueados: haz clic en uno seleccionado para cambiarlo, o en LIMPIAR para reiniciar
         </p>
       )}
     </div>
@@ -187,7 +187,7 @@ function SelectedTypeSlot({ type, slot }) {
       {type ? (
         <><span>{TYPE_POKEMON[type]}</span><span>{type}</span></>
       ) : (
-        <span className="font-mono tracking-wider">Tipo {slot} —</span>
+        <span className="font-mono tracking-wider">Tipo {slot}</span>
       )}
     </div>
   );

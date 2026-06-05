@@ -1,6 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { filterPokemonByEvStat, fetchPokemonThroughGeneration } from "../services/pokeApi";
-import { TYPE_COLORS } from "../data/typeData";
+import { ChevronRight, Search, Sparkles } from "lucide-react";
+import { fetchPokemonEvolutionLine, fetchPokemonThroughGeneration } from "../services/pokeApi";
+import {
+  getDefensiveMatchups,
+  getDualOffensiveMatchups,
+  TYPE_COLORS,
+} from "../data/typeData";
 
 const STAT_OPTIONS = [
   { id: "hp", label: "HP", short: "HP", color: "#EF4444" },
@@ -9,18 +14,6 @@ const STAT_OPTIONS = [
   { id: "special-attack", label: "At. Especial", short: "SPA", color: "#A855F7" },
   { id: "special-defense", label: "Def. Especial", short: "SPD", color: "#22C55E" },
   { id: "speed", label: "Velocidad", short: "SPE", color: "#FACC15" },
-];
-
-const GAME_OPTIONS = [
-  { id: "gen-1", label: "Generacion 1", sublabel: "Rojo / Azul / Amarillo", generation: 1 },
-  { id: "gen-2", label: "Generacion 2", sublabel: "Oro / Plata / Cristal", generation: 2 },
-  { id: "gen-3", label: "Generacion 3", sublabel: "Rubi / Zafiro / Esmeralda", generation: 3 },
-  { id: "gen-4", label: "Generacion 4", sublabel: "Diamante / Perla / Platino", generation: 4 },
-  { id: "gen-5", label: "Generacion 5", sublabel: "Negro / Blanco", generation: 5 },
-  { id: "gen-6", label: "Generacion 6", sublabel: "X / Y / ROZA", generation: 6 },
-  { id: "gen-7", label: "Generacion 7", sublabel: "Sol / Luna", generation: 7 },
-  { id: "gen-8", label: "Generacion 8", sublabel: "Espada / Escudo", generation: 8 },
-  { id: "gen-9", label: "Generacion 9", sublabel: "Escarlata / Purpura", generation: 9 },
 ];
 
 const TYPE_NAME_ES = {
@@ -57,6 +50,8 @@ const normalizeSearch = (value) =>
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/[^a-z0-9]/g, "");
 
+const toDisplayType = (type) => TYPE_NAME_ES[type] || type;
+
 const getPokemonEvYields = (pokemon) =>
   STAT_OPTIONS
     .map((stat) => ({
@@ -65,54 +60,16 @@ const getPokemonEvYields = (pokemon) =>
     }))
     .filter((stat) => stat.effort > 0);
 
-function GenerationButton({ option, isActive, onClick }) {
-  return (
-    <button
-      onClick={onClick}
-      className="px-3 py-2 rounded-xl border text-left transition-all duration-200 min-w-[160px]"
-      style={{
-        backgroundColor: isActive ? "rgba(248,208,48,0.13)" : "rgba(255,255,255,0.025)",
-        borderColor: isActive ? "rgba(248,208,48,0.75)" : "rgba(255,255,255,0.08)",
-        boxShadow: isActive ? "0 0 18px rgba(248,208,48,0.18)" : "none",
-      }}
-    >
-      <div className="text-white font-black text-sm leading-tight">{option.label}</div>
-      <div className="text-white/30 text-[10px] font-mono mt-0.5">{option.sublabel}</div>
-    </button>
-  );
-}
+const getTotalStats = (pokemon) =>
+  STAT_OPTIONS.reduce((total, stat) => total + (pokemon.baseStats?.[stat.id] || 0), 0);
 
-function StatButton({ stat, isActive, count, onClick }) {
-  return (
-    <button
-      onClick={onClick}
-      className="flex items-center gap-2 px-3 py-2 rounded-xl border-2 transition-all duration-200"
-      style={{
-        backgroundColor: isActive ? `${stat.color}24` : `${stat.color}0F`,
-        borderColor: isActive ? stat.color : `${stat.color}55`,
-        color: isActive ? "#fff" : `${stat.color}`,
-        boxShadow: isActive ? `0 0 18px ${stat.color}30` : "0 1px 4px rgba(0,0,0,0.2)",
-      }}
-    >
-      <span
-        className="w-8 h-8 rounded-lg flex items-center justify-center font-black text-[11px] font-mono"
-        style={{ backgroundColor: `${stat.color}26`, color: stat.color }}
-      >
-        {stat.short}
-      </span>
-      <span className="font-black text-sm whitespace-nowrap">{stat.label}</span>
-      <span className="text-[10px] font-mono opacity-60">{count}</span>
-    </button>
-  );
-}
-
-function TypePill({ type }) {
-  const label = TYPE_NAME_ES[type] || type;
+function TypePill({ type, multiplier }) {
+  const label = toDisplayType(type);
   const colors = TYPE_COLORS[label] || { bg: "#888" };
 
   return (
     <span
-      className="text-[10px] font-bold px-2 py-0.5 rounded-lg"
+      className="text-[10px] font-bold px-2 py-0.5 rounded-lg inline-flex items-center gap-1"
       style={{
         color: colors.bg,
         backgroundColor: `${colors.bg}18`,
@@ -120,105 +77,272 @@ function TypePill({ type }) {
       }}
     >
       {label}
+      {multiplier && <span className="font-mono opacity-70">x{multiplier}</span>}
     </span>
   );
 }
 
-function PokemonEvCard({ pokemon, stat, showAllEvs = false }) {
-  const evYields = getPokemonEvYields(pokemon);
-  const accent = showAllEvs ? evYields[0] || stat : stat;
+function StatBar({ stat, value }) {
+  const percent = Math.min(100, Math.round((value / 180) * 100));
 
   return (
-    <article
-      className="rounded-2xl border p-3 flex gap-3 items-center min-h-[104px] transition-all duration-200 hover:-translate-y-0.5"
+    <div className="grid grid-cols-[88px_42px_1fr] items-center gap-2">
+      <span className="text-white/45 text-[11px] font-black">{stat.label}</span>
+      <span className="text-white text-xs font-mono text-right">{value}</span>
+      <div className="h-2 rounded-full bg-white/8 overflow-hidden">
+        <div
+          className="h-full rounded-full"
+          style={{
+            width: `${percent}%`,
+            backgroundColor: stat.color,
+            boxShadow: `0 0 12px ${stat.color}55`,
+          }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function SearchResult({ pokemon, isActive, onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      className="w-full rounded-xl border p-3 flex items-center gap-3 text-left transition-all duration-200 hover:-translate-y-0.5"
       style={{
-        background: `linear-gradient(135deg, ${accent.color}14, rgba(255,255,255,0.025))`,
-        borderColor: `${accent.color}38`,
-        boxShadow: "0 2px 12px rgba(0,0,0,0.18)",
+        backgroundColor: isActive ? "rgba(248,208,48,0.12)" : "rgba(255,255,255,0.025)",
+        borderColor: isActive ? "rgba(248,208,48,0.65)" : "rgba(255,255,255,0.08)",
       }}
     >
-      <div
-        className="w-20 h-20 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden"
-        style={{
-          backgroundColor: `${accent.color}12`,
-          border: `1px solid ${accent.color}28`,
-        }}
-      >
+      <div className="w-14 h-14 rounded-lg bg-white/[0.035] border border-white/8 flex items-center justify-center flex-shrink-0">
         {pokemon.sprite ? (
-          <img
-            src={pokemon.sprite}
-            alt={pokemon.name}
-            loading="lazy"
-            className="w-16 h-16 object-contain"
-          />
+          <img src={pokemon.sprite} alt={pokemon.name} loading="lazy" className="w-12 h-12 object-contain" />
         ) : (
-          <span className="text-white/25 font-black text-xl">#{pokemon.id}</span>
+          <span className="text-white/25 font-mono text-xs">#{pokemon.id}</span>
         )}
       </div>
-
       <div className="min-w-0 flex-1">
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
-            <p className="text-white/25 text-[10px] font-mono">#{String(pokemon.id).padStart(4, "0")}</p>
-            <h3 className="text-white font-black text-lg leading-tight truncate">
-              {formatPokemonName(pokemon.name)}
-            </h3>
-          </div>
-          {!showAllEvs && (
-            <div
-              className="px-2.5 py-1 rounded-lg font-black font-mono text-sm flex-shrink-0"
-              style={{
-                backgroundColor: `${stat.color}24`,
-                border: `1px solid ${stat.color}60`,
-                color: stat.color,
-              }}
-            >
-              +{pokemon.effort}
-            </div>
-          )}
-        </div>
-
-        <div className="flex flex-wrap gap-1.5 mt-2">
+        <p className="text-white/25 text-[10px] font-mono">#{String(pokemon.id).padStart(4, "0")}</p>
+        <h3 className="text-white font-black text-lg leading-tight truncate">{formatPokemonName(pokemon.name)}</h3>
+        <div className="flex flex-wrap gap-1.5 mt-1.5">
           {pokemon.types.map((type) => (
             <TypePill key={type} type={type} />
           ))}
         </div>
+      </div>
+      <div className="text-right flex-shrink-0">
+        <p className="text-white font-black text-lg font-mono">{getTotalStats(pokemon)}</p>
+        <p className="text-white/25 text-[10px] font-mono">TOTAL</p>
+      </div>
+    </button>
+  );
+}
 
-        {showAllEvs ? (
-          <div className="flex flex-wrap gap-1.5 mt-2">
-            {evYields.map((ev) => (
-              <span
-                key={ev.id}
-                className="text-[10px] font-black font-mono px-2 py-0.5 rounded-lg"
-                style={{
-                  color: ev.color,
-                  backgroundColor: `${ev.color}1C`,
-                  border: `1px solid ${ev.color}55`,
-                }}
-              >
-                +{ev.effort} {ev.short}
-              </span>
-            ))}
-            {evYields.length === 0 && (
-              <span className="text-white/25 text-[10px] font-mono">Sin EVs registrados</span>
-            )}
-          </div>
+function MatchupGroup({ title, types, tone, emptyText }) {
+  return (
+    <div className="rounded-xl border border-white/8 bg-white/[0.02] p-3">
+      <p className="text-white/25 text-[10px] font-mono uppercase tracking-widest mb-2">{title}</p>
+      <div className="flex flex-wrap gap-1.5">
+        {types.length > 0 ? (
+          types.map((entry) => {
+            const type = typeof entry === "string" ? entry : entry.type;
+            const mult = typeof entry === "string" ? null : entry.mult;
+            return <TypePill key={`${type}-${mult || tone}`} type={type} multiplier={mult} />;
+          })
         ) : (
-          <p className="text-white/20 text-[10px] font-mono mt-2">
-            Gen {pokemon.generation} · EV {stat.label}
-          </p>
+          <span className="text-white/25 text-[10px] font-mono">{emptyText}</span>
         )}
+      </div>
+    </div>
+  );
+}
+
+function MatchupsPanel({ pokemon }) {
+  const [type1, type2] = pokemon.types.map(toDisplayType);
+  const defensive = getDefensiveMatchups(type1, type2);
+  const offensive = getDualOffensiveMatchups(type1, type2);
+
+  const weak = [
+    ...defensive.weakX4.map((type) => ({ type, mult: 4 })),
+    ...defensive.weakX2.map((type) => ({ type, mult: 2 })),
+  ];
+  const resist = [
+    ...defensive.resistX025.map((type) => ({ type, mult: 0.25 })),
+    ...defensive.resistX05.map((type) => ({ type, mult: 0.5 })),
+  ];
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+      <MatchupGroup title="Debilidades" types={weak} tone="weak" emptyText="Sin debilidades relevantes" />
+      <MatchupGroup title="Resistencias" types={resist} tone="resist" emptyText="Sin resistencias" />
+      <MatchupGroup title="Inmunidades" types={defensive.immunities} tone="immune" emptyText="Sin inmunidades" />
+      <MatchupGroup
+        title="STAB super efectivo"
+        types={offensive.superEffective}
+        tone="effective"
+        emptyText="Sin cobertura super efectiva por tipo"
+      />
+    </div>
+  );
+}
+
+function EvolutionLine({ evolutionLine, selectedPokemonName, loading, error, onSelect }) {
+  if (loading) {
+    return (
+      <div className="rounded-xl border border-white/8 bg-white/[0.02] px-4 py-3 text-white/30 text-xs font-mono">
+        Cargando linea evolutiva...
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-red-200 text-xs font-mono">
+        {error}
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex gap-2 overflow-x-auto pb-2">
+      {evolutionLine.map((entry, index) => {
+        const isActive = entry.name === selectedPokemonName;
+
+        return (
+          <div key={`${entry.name}-${index}`} className="flex items-center gap-2 flex-shrink-0">
+            {index > 0 && <ChevronRight className="w-4 h-4 text-white/18" />}
+            <button
+              onClick={() => onSelect(entry.pokemon)}
+              className="w-[132px] rounded-xl border p-3 text-center transition-all duration-200 hover:-translate-y-0.5"
+              style={{
+                backgroundColor: isActive ? "rgba(248,208,48,0.12)" : "rgba(255,255,255,0.025)",
+                borderColor: isActive ? "rgba(248,208,48,0.65)" : "rgba(255,255,255,0.08)",
+              }}
+            >
+              <div className="h-16 flex items-center justify-center">
+                {entry.pokemon?.sprite ? (
+                  <img
+                    src={entry.pokemon.sprite}
+                    alt={entry.name}
+                    loading="lazy"
+                    className="w-16 h-16 object-contain"
+                  />
+                ) : (
+                  <span className="text-white/25 font-mono text-xs">#{entry.id}</span>
+                )}
+              </div>
+              <p className="text-white font-black leading-tight truncate">{formatPokemonName(entry.name)}</p>
+              <p className="text-white/30 text-[10px] font-mono mt-1 min-h-[28px]">{entry.requirement}</p>
+            </button>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function PokemonDetailPanel({ pokemon, evolutionLine, evolutionLoading, evolutionError, onEvolutionSelect }) {
+  const evYields = getPokemonEvYields(pokemon);
+  const totalStats = getTotalStats(pokemon);
+
+  return (
+    <article className="rounded-2xl border border-white/8 bg-white/[0.025] p-4">
+      <div className="flex flex-col md:flex-row gap-4 md:items-center">
+        <div className="w-36 h-36 rounded-2xl bg-white/[0.035] border border-white/8 flex items-center justify-center flex-shrink-0">
+          {pokemon.sprite ? (
+            <img src={pokemon.sprite} alt={pokemon.name} className="w-32 h-32 object-contain" />
+          ) : (
+            <span className="text-white/25 font-mono">#{pokemon.id}</span>
+          )}
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-white/25 text-[11px] font-mono">#{String(pokemon.id).padStart(4, "0")}</p>
+          <h3 className="text-white font-black text-4xl sm:text-5xl leading-none mt-1">
+            {formatPokemonName(pokemon.name)}
+          </h3>
+          <div className="flex flex-wrap gap-1.5 mt-3">
+            {pokemon.types.map((type) => (
+              <TypePill key={type} type={type} />
+            ))}
+          </div>
+        </div>
+        <div className="rounded-xl border border-[#F8D030]/35 bg-[#F8D030]/10 px-4 py-3 text-center">
+          <p className="text-[#F8D030] font-black text-3xl font-mono">{totalStats}</p>
+          <p className="text-white/25 text-[10px] font-mono uppercase tracking-widest">Total base</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_260px] gap-4 mt-5">
+        <div>
+          <div className="flex items-center gap-3 mb-3">
+            <Sparkles className="w-4 h-4 text-[#F8D030]" />
+            <span className="text-white/25 text-[10px] font-mono tracking-widest uppercase">Stats base</span>
+            <div className="flex-1 h-px bg-white/8" />
+          </div>
+          <div className="space-y-2">
+            {STAT_OPTIONS.map((stat) => (
+              <StatBar key={stat.id} stat={stat} value={pokemon.baseStats?.[stat.id] || 0} />
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <p className="text-white/25 text-[10px] font-mono uppercase tracking-widest mb-3">EVs al derrotarlo</p>
+          <div className="rounded-xl border border-white/8 bg-white/[0.02] px-4 py-3">
+            <div className="flex flex-wrap gap-1.5">
+              {evYields.map((ev) => (
+                <span
+                  key={ev.id}
+                  className="text-[10px] font-black font-mono px-2 py-0.5 rounded-lg"
+                  style={{
+                    color: ev.color,
+                    backgroundColor: `${ev.color}1C`,
+                    border: `1px solid ${ev.color}55`,
+                  }}
+                >
+                  +{ev.effort} {ev.short}
+                </span>
+              ))}
+              {evYields.length === 0 && (
+                <span className="text-white/25 text-[10px] font-mono">Sin EVs registrados</span>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-5">
+        <div className="flex items-center gap-3 mb-3">
+          <span className="text-white/25 text-[10px] font-mono tracking-widest uppercase">Linea evolutiva</span>
+          <div className="flex-1 h-px bg-white/8" />
+        </div>
+        <EvolutionLine
+          evolutionLine={evolutionLine}
+          selectedPokemonName={pokemon.name}
+          loading={evolutionLoading}
+          error={evolutionError}
+          onSelect={onEvolutionSelect}
+        />
+      </div>
+
+      <div className="mt-5">
+        <div className="flex items-center gap-3 mb-3">
+          <span className="text-white/25 text-[10px] font-mono tracking-widest uppercase">Eficacias y debilidades</span>
+          <div className="flex-1 h-px bg-white/8" />
+        </div>
+        <MatchupsPanel pokemon={pokemon} />
       </div>
     </article>
   );
 }
 
 export default function EvTrainingFinder() {
-  const [selectedGame, setSelectedGame] = useState(GAME_OPTIONS[8]);
-  const [selectedStat, setSelectedStat] = useState(STAT_OPTIONS[1]);
   const [pokemonList, setPokemonList] = useState([]);
+  const [selectedPokemon, setSelectedPokemon] = useState(null);
+  const [evolutionLine, setEvolutionLine] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [evolutionLoading, setEvolutionLoading] = useState(false);
   const [error, setError] = useState("");
+  const [evolutionError, setEvolutionError] = useState("");
   const [progress, setProgress] = useState({ completed: 0, total: 0 });
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -228,7 +352,7 @@ export default function EvTrainingFinder() {
     setError("");
     setProgress({ completed: 0, total: 0 });
 
-    fetchPokemonThroughGeneration(selectedGame.generation, (nextProgress) => {
+    fetchPokemonThroughGeneration(9, (nextProgress) => {
       if (alive) setProgress(nextProgress);
     })
       .then((pokemon) => {
@@ -240,25 +364,42 @@ export default function EvTrainingFinder() {
         if (!alive) return;
         setError("No se pudo conectar con PokeAPI. Revisa tu conexion e intenta de nuevo.");
         setPokemonList([]);
+        setSelectedPokemon(null);
         setLoading(false);
       });
 
     return () => {
       alive = false;
     };
-  }, [selectedGame]);
+  }, []);
 
-  const statCounts = useMemo(() => {
-    return STAT_OPTIONS.reduce((acc, stat) => {
-      acc[stat.id] = filterPokemonByEvStat(pokemonList, stat.id).length;
-      return acc;
-    }, {});
-  }, [pokemonList]);
+  useEffect(() => {
+    if (!selectedPokemon) {
+      setEvolutionLine([]);
+      return;
+    }
 
-  const filteredPokemon = useMemo(
-    () => filterPokemonByEvStat(pokemonList, selectedStat.id),
-    [pokemonList, selectedStat]
-  );
+    let alive = true;
+    setEvolutionLoading(true);
+    setEvolutionError("");
+
+    fetchPokemonEvolutionLine(selectedPokemon.name)
+      .then((line) => {
+        if (!alive) return;
+        setEvolutionLine(line);
+        setEvolutionLoading(false);
+      })
+      .catch(() => {
+        if (!alive) return;
+        setEvolutionLine([]);
+        setEvolutionError("No se pudo cargar la linea evolutiva.");
+        setEvolutionLoading(false);
+      });
+
+    return () => {
+      alive = false;
+    };
+  }, [selectedPokemon]);
 
   const trimmedSearch = searchQuery.trim();
   const searchResults = useMemo(() => {
@@ -267,129 +408,73 @@ export default function EvTrainingFinder() {
 
     return pokemonList
       .filter((pokemon) => normalizeSearch(pokemon.name).includes(query))
-      .sort((a, b) => a.id - b.id);
+      .sort((a, b) => a.id - b.id)
+      .slice(0, 30);
   }, [pokemonList, trimmedSearch]);
 
-  const isSearching = trimmedSearch.length > 0;
-  const visiblePokemon = isSearching ? searchResults : filteredPokemon;
+  useEffect(() => {
+    if (!trimmedSearch) {
+      setSelectedPokemon(null);
+      return;
+    }
+
+    if (searchResults.length === 0) {
+      setSelectedPokemon(null);
+      return;
+    }
+
+    if (selectedPokemon && searchResults.some((pokemon) => pokemon.id === selectedPokemon.id)) return;
+    setSelectedPokemon(searchResults[0]);
+  }, [searchResults, selectedPokemon, trimmedSearch]);
 
   const progressPercent = progress.total
     ? Math.round((progress.completed / progress.total) * 100)
     : 0;
+
+  const handleEvolutionSelect = (pokemon) => {
+    setSelectedPokemon(pokemon);
+    setSearchQuery(pokemon.name);
+  };
 
   return (
     <section className="py-6 pb-20">
       <div className="flex items-center gap-4 mb-6">
         <div>
           <h2 className="text-3xl sm:text-4xl font-black text-white tracking-tight">
-            EV Training Finder
+            Ficha Pokemon
           </h2>
           <p className="text-white/30 text-sm font-mono mt-1">
-            Filtra Pokemon por puntos de esfuerzo hasta la generacion elegida
+            Busca un Pokemon para ver stats, EVs, evolucion y matchups
           </p>
         </div>
         <div className="flex-1 h-px bg-gradient-to-r from-white/10 to-transparent ml-2" />
       </div>
 
       <div className="space-y-5">
-        <div>
-          <div className="flex items-center gap-3 mb-3">
-            <span className="text-white/20 text-[10px] font-mono tracking-widest uppercase">Juego / Generacion</span>
-            <div className="flex-1 h-px bg-white/8" />
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {GAME_OPTIONS.map((option) => (
-              <GenerationButton
-                key={option.id}
-                option={option}
-                isActive={option.id === selectedGame.id}
-                onClick={() => setSelectedGame(option)}
-              />
-            ))}
-          </div>
-        </div>
-
-        <div>
-          <div className="flex items-center gap-3 mb-3">
-            <span className="text-white/20 text-[10px] font-mono tracking-widest uppercase">Estadistica EV</span>
-            <div className="flex-1 h-px bg-white/8" />
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {STAT_OPTIONS.map((stat) => (
-              <StatButton
-                key={stat.id}
-                stat={stat}
-                isActive={stat.id === selectedStat.id}
-                count={statCounts[stat.id] || 0}
-                onClick={() => setSelectedStat(stat)}
-              />
-            ))}
-          </div>
-        </div>
-
-        <div>
-          <div className="flex items-center gap-3 mb-3">
-            <span className="text-white/20 text-[10px] font-mono tracking-widest uppercase">Buscar Pokemon</span>
-            <div className="flex-1 h-px bg-white/8" />
-          </div>
-          <div className="flex gap-2 flex-wrap">
+        <div className="rounded-2xl border border-white/8 bg-white/[0.025] p-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/25" />
             <input
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder="Ej. meloetta, zubat, basculin"
-              className="min-w-[260px] flex-1 rounded-xl border px-4 py-3 bg-white/[0.035] text-white placeholder:text-white/20 font-mono text-sm outline-none transition-all duration-200"
-              style={{
-                borderColor: isSearching ? `${selectedStat.color}85` : "rgba(255,255,255,0.09)",
-                boxShadow: isSearching ? `0 0 18px ${selectedStat.color}18` : "none",
-              }}
+              placeholder="Buscar por nombre: charizard, gardevoir, lucario..."
+              className="w-full rounded-xl border border-white/10 pl-10 pr-4 py-3 bg-white/[0.035] text-white placeholder:text-white/20 font-mono text-sm outline-none transition-all duration-200 focus:border-[#F8D030]/70"
             />
-            {isSearching && (
-              <button
-                onClick={() => setSearchQuery("")}
-                className="px-4 py-3 rounded-xl border border-white/10 text-white/45 hover:text-white/75 hover:border-white/20 transition-all duration-200 font-black text-sm"
-              >
-                Limpiar
-              </button>
-            )}
-          </div>
-        </div>
-
-        <div
-          className="rounded-2xl border p-4"
-          style={{
-            backgroundColor: "rgba(255,255,255,0.025)",
-            borderColor: `${selectedStat.color}35`,
-          }}
-        >
-          <div className="flex items-center gap-3 flex-wrap">
-            <div>
-              <p className="text-white/25 text-[10px] font-mono uppercase tracking-widest">
-                Resultados
-              </p>
-              <h3 className="text-white font-black text-xl leading-tight">
-                {isSearching ? `Busqueda: ${trimmedSearch}` : `${selectedStat.label} · ${selectedGame.label}`}
-              </h3>
-            </div>
-            <div className="ml-auto text-right">
-              <p className="text-white font-black text-2xl font-mono">{visiblePokemon.length}</p>
-              <p className="text-white/25 text-[10px] font-mono uppercase tracking-widest">Pokemon</p>
-            </div>
           </div>
 
           {loading && (
             <div className="mt-4">
               <div className="h-2 rounded-full bg-white/8 overflow-hidden">
                 <div
-                  className="h-full transition-all duration-300"
+                  className="h-full transition-all duration-300 bg-[#F8D030]"
                   style={{
                     width: `${progressPercent}%`,
-                    backgroundColor: selectedStat.color,
-                    boxShadow: `0 0 14px ${selectedStat.color}70`,
+                    boxShadow: "0 0 14px rgba(248,208,48,0.6)",
                   }}
                 />
               </div>
               <p className="text-white/25 text-xs font-mono mt-2">
-                Cargando datos desde PokeAPI {progress.completed}/{progress.total || "..."}
+                Cargando Pokedex {progress.completed}/{progress.total || "..."}
               </p>
             </div>
           )}
@@ -401,24 +486,51 @@ export default function EvTrainingFinder() {
           )}
         </div>
 
-        {!loading && !error && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-            {visiblePokemon.map((pokemon) => (
-              <PokemonEvCard
-                key={`${pokemon.id}-${isSearching ? "search" : selectedStat.id}`}
-                pokemon={pokemon}
-                stat={selectedStat}
-                showAllEvs={isSearching}
+        {!loading && !error && trimmedSearch && (
+          <div className="grid grid-cols-1 lg:grid-cols-[360px_minmax(0,1fr)] gap-4 items-start">
+            <aside className="rounded-2xl border border-white/8 bg-white/[0.02] p-3">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-white/25 text-[10px] font-mono uppercase tracking-widest">Resultados</p>
+                <p className="text-white/25 text-[10px] font-mono">{searchResults.length}</p>
+              </div>
+
+              {searchResults.length > 0 ? (
+                <div className="max-h-[620px] overflow-y-auto pr-1 space-y-2">
+                  {searchResults.map((pokemon) => (
+                    <SearchResult
+                      key={pokemon.id}
+                      pokemon={pokemon}
+                      isActive={selectedPokemon?.id === pokemon.id}
+                      onClick={() => setSelectedPokemon(pokemon)}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="px-4 py-3 rounded-xl border border-white/8 bg-white/[0.02] text-white/25 text-xs font-mono">
+                  No encontre Pokemon con ese nombre.
+                </div>
+              )}
+            </aside>
+
+            {selectedPokemon ? (
+              <PokemonDetailPanel
+                pokemon={selectedPokemon}
+                evolutionLine={evolutionLine}
+                evolutionLoading={evolutionLoading}
+                evolutionError={evolutionError}
+                onEvolutionSelect={handleEvolutionSelect}
               />
-            ))}
+            ) : (
+              <div className="rounded-2xl border border-white/8 bg-white/[0.02] min-h-[360px] flex items-center justify-center text-white/25 text-sm font-mono">
+                Selecciona un Pokemon de los resultados.
+              </div>
+            )}
           </div>
         )}
 
-        {!loading && !error && visiblePokemon.length === 0 && (
-          <div className="px-4 py-3 rounded-xl border border-white/8 bg-white/[0.02] text-white/25 text-xs font-mono">
-            {isSearching
-              ? "No encontre Pokemon con ese nombre en el rango seleccionado."
-              : "No hay Pokemon con EVs para esta estadistica en el rango seleccionado."}
+        {!loading && !error && !trimmedSearch && (
+          <div className="rounded-2xl border border-white/8 bg-white/[0.02] min-h-[260px] flex items-center justify-center text-white/25 text-sm font-mono">
+            Escribe un nombre para abrir su ficha.
           </div>
         )}
       </div>
